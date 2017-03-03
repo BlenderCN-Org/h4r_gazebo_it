@@ -1,6 +1,7 @@
 import bpy,bmesh
 import os
 from copy import copy
+from numpy.f2py.crackfortran import dimensionpattern
 
 def getBoundingBoxesForObjects():
 #     selected = bpy.context.selected_objects
@@ -80,20 +81,22 @@ def getScales(target_sizes):
         
     for s in range(3):
         if(abs(sizes[s] - target_sizes[s]) >0.001):
-            scales=target_sizes/sizes[s]
+            scales=target_sizes[s]/sizes[s]
     pass
+
+    return scales
 
 def convert_obj(obj_path, out_path, dimensions=None):
     file_name, file_extension = os.path.splitext(os.path.basename(obj_path))
     scene = bpy.context.scene
+    out_file=out_path+"/"+file_name+".dae"
  
     # Clear existing objects.
     scene.camera = None
     for obj in scene.objects:
         scene.objects.unlink(obj)
 
-    print(out_path)
-    print(file_name)
+
 
     scene.unit_settings.system='METRIC'
     
@@ -122,36 +125,24 @@ def convert_obj(obj_path, out_path, dimensions=None):
     
     
     
-        
+    #get height over ground    
     minmax=getCurrentSceneMinMaxCoords()
-    
     floor=minmax[0][2]
 
-    
-    
-    print(">>>>>>>>>>>>Minimum Coordinates in Z are: " + str(min_z))
+    scales=[1.0, 1.0, 1.0]
+    if(dimensions != None):
+        scales=getScales(dimensions)
 
-    for obj in bpy.context.scene.objects:
-        obj.location[2]+=-min_z
-        pass
+    print("Converted Model: ", obj_path + " to " + out_file)
+    print("Model should be scaled  in [x,y,z] like " + str(scales))
+    print("According to vertex information it should be positioned " + str(floor) + " meters above floor in Gazebo, to not get stuck")
     
     
-    bpy.context.scene.update()
-    minmax=getCurrentSceneMinMaxCoords()
-    
-    print(minmax[0][2])
-
 
         
     
-    
-    #Check Size
-    
-    #Resize
-    #bpy.ops.transform.resize(value=(1,1,2))    
-    
     #Export to collada file
-    bpy.ops.wm.collada_export(filepath=out_path+"/"+file_name+".dae", 
+    bpy.ops.wm.collada_export(filepath=out_file,
                               check_existing=True, 
                               filter_blender=False, 
                               filter_backup=False, 
