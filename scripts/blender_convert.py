@@ -1,7 +1,16 @@
 import bpy,bmesh
 import os
+import zipfile
+import tempfile
+import os, shutil
+import re
+import io
+
+
 from copy import copy
 from numpy.f2py.crackfortran import dimensionpattern
+from builtins import enumerate
+from debian.copyright import Header
 
 def getBoundingBoxesForObjects():
 #     selected = bpy.context.selected_objects
@@ -182,7 +191,83 @@ def convert_obj(obj_path, out_path, dimensions=None):
     pass
 
 def convert_sh3d(obj_path, out_dir):
+    tempfolder=tempfile.mkdtemp()
+    print(tempfolder)
     
+    zip_ref = zipfile.ZipFile(obj_path, 'r')
+    zip_ref.extractall(tempfolder)
+    zip_ref.close()
+
+    header_tags=list(enumerate([
+        "modified",
+        "id",
+        "name",
+        "description",
+        "version",
+        "license ",
+        "provider"
+    ]))
+    
+    furniture_tags=list(enumerate([
+    "id",#0
+    "name",
+    "description",
+    "information",
+    "tags",
+    "creation_date",
+    "grade",
+    "category",
+    "creator",
+    "price",
+    "value_added_tax_percentage",#10
+    "model",
+    "icon",
+    "plan_icon",
+    "width",#14
+    "depth",#15
+    "height",#16
+    "movable",#17
+    "door_or_window",
+    "door_or_window_cut_out_shape",
+    "staircase_cut_out_shape",
+    "elevation",#21
+    "model_rotation",#22
+    "resizable",#23
+    "deformable",
+    "texturable"
+    ]))
+    
+    processing_tags=[11,14,15,16,17,21,22,23]
+    info_tags=[0,1,2,3,4,5,7,8,9]
+
+
+    header={}
+    models={}
+    model=0
+    
+    
+
+    #Lets read the FurnitureCatalog
+    with open(tempfolder+"/"+"PluginFurnitureCatalog.properties",encoding='ISO-8859-1') as f:
+        content = f.readlines()
+    content = [x.strip() for x in content] 
+        
+    for line in content: 
+        hashFound=line.find("#")
+        if(model==0):
+            if(hashFound==0): #Comment
+                continue
+            elif(hashFound>0): #Models section started
+                model=1
+            else: #file header
+                #line.lower().match()
+                pass
+        if(model>0):
+             
+             
+            pass
+    
+    shutil.rmtree(tempfolder)
     pass
     
 
@@ -225,7 +310,7 @@ def main():
     file_name, file_extension = os.path.splitext(args.infile)
     
 
-    if(file_extension==".sh3d"):
+    if(file_extension==".sh3f"):
         convert_sh3d(args.infile, args.outdir)
         pass
     elif(file_extension==".obj"):
