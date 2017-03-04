@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+import sys
+from subprocess import call
+
+import os
+import argparse
+
+    
+    
+    
+    
+def __main__():
+
+     
+     
+    parser = argparse.ArgumentParser(description='Convert sh3d files to Gazebo simulator') 
+    parser.add_argument('infile')
+    parser.add_argument('outdir',nargs='?', const=".", default=".")
+    parser.add_argument('--ros_package', help='name of package which should be created')
+    parser.add_argument('--debug', action='store_true', help='open blender window while and after operation')
+    
+    args = parser.parse_args()
+    
+    
+    infile=os.path.realpath(args.infile)
+    outdir=os.path.realpath(args.outdir)
+    
+    print(infile)
+    print(outdir)    
+
+    background=""
+    if( not args.debug):
+        background="--background"
+            
+    package=["",""]
+     
+    if(args.ros_package!=None):
+        package[0]="--ros_package"
+        package[1]=args.ros_package
+        
+    
+    if  ( os.path.isfile(infile) and os.path.isdir(outdir) ):
+        call(["blender" , background, "--python", os.path.dirname(sys.argv[0]) + "/blender_convert.py", "--", infile, outdir, package[0],package[1]])
+    else:
+        print("Input file not found!")
+        
+__main__()
