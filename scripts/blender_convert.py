@@ -11,6 +11,7 @@ from copy import copy
 from numpy.f2py.crackfortran import dimensionpattern
 from builtins import enumerate
 from debian.copyright import Header
+from pip.download import is_dir_url
 
 def getBoundingBoxesForObjects():
 #     selected = bpy.context.selected_objects
@@ -43,6 +44,14 @@ def getBoundingBoxesForObjects():
 #         bound_box.rotation_euler = obj.rotation_euler
          
     pass
+
+def createDir(dir):
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    return dir
+    
+    
+
 
 def getCurrentSceneMinMaxCoords():
     #Current scene
@@ -82,23 +91,27 @@ def getCurrentSceneMinMaxCoords():
 
 def getScales(target_sizes):
     minmax=getCurrentSceneMinMaxCoords()
-    scales=[0,0,0]
+    scales=[1.0,1.0,1.0]
     sizes=[0,0,0]
+    
+    
+    
     for s in range(3):
         sizes[s]=minmax[1][s]-minmax[0][s]
-        
-        
+            
     for s in range(3):
-        if(abs(sizes[s] - target_sizes[s]) >0.001):
-            scales=target_sizes[s]/sizes[s]
-    pass
-
+        if(target_sizes[s]!=None):
+            if(abs(sizes[s] - target_sizes[s]) >0.001):
+                scales[s]=target_sizes[s]/sizes[s]
+                
     return scales
 
 def convert_obj(obj_path, out_path, dimensions=None):
     file_name, file_extension = os.path.splitext(os.path.basename(obj_path))
     scene = bpy.context.scene
     out_file=out_path+"/"+file_name+".dae"
+    
+    ret_data={}
  
     # Clear existing objects.
     scene.camera = None
@@ -138,9 +151,12 @@ def convert_obj(obj_path, out_path, dimensions=None):
     minmax=getCurrentSceneMinMaxCoords()
     floor=minmax[0][2]
 
+    
     scales=[1.0, 1.0, 1.0]
     if(dimensions != None):
         scales=getScales(dimensions)
+        
+    
 
     print("Converted Model: ", obj_path + " to " + out_file)
     print("Model should be scaled  in [x,y,z] like " + str(scales))
@@ -190,9 +206,12 @@ def convert_obj(obj_path, out_path, dimensions=None):
                               open_sim=False)    
     pass
 
-def convert_sh3d(obj_path, out_dir):
+def convert_sh3d(obj_path, out_dir, ros_package=None):
     tempfolder=tempfile.mkdtemp()
-    print(tempfolder)
+    #print(tempfolder)
+    #print(ros_package)
+    
+    
     
     zip_ref = zipfile.ZipFile(obj_path, 'r')
     zip_ref.extractall(tempfolder)
@@ -237,13 +256,11 @@ def convert_sh3d(obj_path, out_dir):
     "texturable"
     ]))
     
-    processing_tags=[11,14,15,16,17,21,22,23]
-    info_tags=[0,1,2,3,4,5,7,8,9]
+
 
 
     header={}
     models={}
-    model=0
     
     
 
@@ -253,25 +270,69 @@ def convert_sh3d(obj_path, out_dir):
     content = [x.strip() for x in content] 
         
     for line in content: 
-        hashFound=line.find("#")
-        if(model==0):
-            if(hashFound==0): #Comment
-                continue
-            elif(hashFound>0): #Models section started
-                model=1
-            else: #file header
-                #line.lower().match()
-                pass
-        if(model>0):
-             
-             
-            pass
+
+        
+        m_base=re.match("^([A-Za-z].*)=(.*)$",line)
+        
+        if(m_base != None):
+            m_furniture=re.match("^([A-Za-z].*)#([0-9].*)",m_base.group(1))
+            
+            if(m_furniture==None): ##Is header
+                header[m_base.group(1).lower()]=m_base.group(2)
+                
+            else: ##Is furniture
+         
+                if m_furniture.group(2) not in models.keys():
+                    models[m_furniture.group(2)]={}
     
+                models[m_furniture.group(2)][m_furniture.group(1).lower()]=m_base.group(2)
+        
+        
+    
+    
+    package_path=""
+    if(ros_package!=None):
+       out_dir=ros_package+"/"+out_dir
+       def_out=createDir(out_dir+"/def")
+       launch_out=createDir(out_dir+"/launch")
+        
+    model_out=createDir(out_dir+"/models")
+            
+    for number, attributes in models.items():
+        
+        if "model" in attributes.keys():
+            
+            model_path=tempfolder+attributes["model"]
+            
+            if os.path.exists(model_path):
+                
+                
+                dimensions=[None,None,None]
+                
+                if "length" in attributes.keys():
+                    dimensions[0]=float(attributes["length"])
+                
+                if "width" in attributes.keys():
+                    dimensions[1]=float(attributes["width"])
+                        
+                if "height" in attributes.keys():
+                    dimensions[2]=float(attributes["height"])
+                    
+                convert_obj(model_path, model_out, dimensions)
+                
+                
+                exit(1)
+                
+            else:
+                status+=("Model does not exist: " +model_path+"\n")
+        pass
+        
+    print("Conversion Status:")
+    print("-------")
+    print(status)
+        
+
     shutil.rmtree(tempfolder)
-    pass
-    
-
-
 
 def main():
     import os
@@ -303,15 +364,20 @@ def main():
     # Example utility, add some text and renders or saves it (with options)
     # Possible types are: string, int, long, choice, float and complex.
 
-    parser.add_argument('infile')
-    parser.add_argument('outdir')
-    args = parser.parse_args(argv)  # In this example we wont use the args
+    parser.add_argument('infile', help='input directory')
+    parser.add_argument('outdir', help='output directory')
+    parser.add_argument('--ros_package', help='name of package which should be created')
+        
+    args = parser.parse_args(argv)
 
     file_name, file_extension = os.path.splitext(args.infile)
     
 
+    
+    
+    
     if(file_extension==".sh3f"):
-        convert_sh3d(args.infile, args.outdir)
+        convert_sh3d(args.infile, args.outdir, args.ros_package)
         pass
     elif(file_extension==".obj"):
         convert_obj(args.infile, args.outdir)
