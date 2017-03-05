@@ -1,0 +1,5 @@
+<launch>
+	
+	<arg name="file" value="$(find h4r_gazebo_it)/template/template_simple.xacro" />
+	<node name="xacro" type="xacro" pkg="xacro" args="$(arg file) --inorder" required="true" output="screen" />
+</launch>
