@@ -5,13 +5,7 @@ import tempfile
 import os, shutil
 import re
 import io
-
-
 from copy import copy
-from numpy.f2py.crackfortran import dimensionpattern
-from builtins import enumerate
-from debian.copyright import Header
-from pip.download import is_dir_url
 
 def getBoundingBoxesForObjects():
 #     selected = bpy.context.selected_objects
@@ -106,10 +100,15 @@ def getScales(target_sizes):
                 
     return scales
 
-def convert_obj(obj_path, out_path, dimensions=None):
+def analyze_obj(obj_path, out_path, dimensions=None):
     file_name, file_extension = os.path.splitext(os.path.basename(obj_path))
     scene = bpy.context.scene
-    out_file=out_path+"/"+file_name+".dae"
+    
+    
+    
+    
+    
+    
     
     ret_data={}
  
@@ -141,70 +140,23 @@ def convert_obj(obj_path, out_path, dimensions=None):
     for obj in bpy.context.scene.objects:
         obj.select = True
     
-    
-
-
-    
-    
-    
     #get height over ground    
     minmax=getCurrentSceneMinMaxCoords()
-    floor=minmax[0][2]
+    ret_data['elevate']=minmax[0][2]
 
     
     scales=[1.0, 1.0, 1.0]
     if(dimensions != None):
         scales=getScales(dimensions)
+    ret_data['scales']=scales
+    
+    
+    
+    
+    
         
-    
+    return ret_data;
 
-    print("Converted Model: ", obj_path + " to " + out_file)
-    print("Model should be scaled  in [x,y,z] like " + str(scales))
-    print("According to vertex information it should be positioned " + str(floor) + " meters above floor in Gazebo, to not get stuck")
-    
-    
-
-        
-    
-    #Export to collada file
-    bpy.ops.wm.collada_export(filepath=out_file,
-                              check_existing=True, 
-                              filter_blender=False, 
-                              filter_backup=False, 
-                              filter_image=False, 
-                              filter_movie=False, 
-                              filter_python=False, 
-                              filter_font=False, 
-                              filter_sound=False, 
-                              filter_text=False, 
-                              filter_btx=False, 
-                              filter_collada=True, 
-                              filter_alembic=False,
-                              filter_folder=True, 
-                              filter_blenlib=False, 
-                              filemode=8, 
-                              display_type='DEFAULT', 
-                              sort_method='FILE_SORT_ALPHA', 
-                              apply_modifiers=False, 
-                              export_mesh_type=0, 
-                              export_mesh_type_selection='view', 
-                              selected=False, 
-                              include_children=False, 
-                              include_armatures=False, 
-                              include_shapekeys=True, 
-                              deform_bones_only=False, 
-                              active_uv_only=False, 
-                              include_uv_textures=True, 
-                              include_material_textures=True, 
-                              use_texture_copies=True, 
-                              triangulate=True, 
-                              use_object_instantiation=True, 
-                              use_blender_profile=True, 
-                              sort_by_name=False, 
-                              export_transformation_type=0, 
-                              export_transformation_type_selection='matrix', 
-                              open_sim=False)    
-    pass
 
 def convert_sh3d(obj_path, out_dir, ros_package=None):
     tempfolder=tempfile.mkdtemp()
@@ -217,48 +169,22 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
     zip_ref.extractall(tempfolder)
     zip_ref.close()
 
-    header_tags=list(enumerate([
-        "modified",
-        "id",
-        "name",
-        "description",
-        "version",
-        "license ",
-        "provider"
-    ]))
+    package_path=""
+    if(ros_package!=None):
+       out_dir=out_dir+"/"+ros_package
+
+    #Create directories    
+    def_out=createDir(out_dir+"/def")
+    def_basic_out=createDir(out_dir+"/def/basic")
+    launch_out=createDir(out_dir+"/launch")
+    mesh_out=createDir(out_dir+"/mesh")
+    model_out=createDir(out_dir+"/models")
     
-    furniture_tags=list(enumerate([
-    "id",#0
-    "name",
-    "description",
-    "information",
-    "tags",
-    "creation_date",
-    "grade",
-    "category",
-    "creator",
-    "price",
-    "value_added_tax_percentage",#10
-    "model",
-    "icon",
-    "plan_icon",
-    "width",#14
-    "depth",#15
-    "height",#16
-    "movable",#17
-    "door_or_window",
-    "door_or_window_cut_out_shape",
-    "staircase_cut_out_shape",
-    "elevation",#21
-    "model_rotation",#22
-    "resizable",#23
-    "deformable",
-    "texturable"
-    ]))
+    template_path=os.path.dirname(__file__)+"/../templates"
     
-
-
-
+    
+    shutil.copy(template_path+"/package_properties.xacro", def_basic_out)
+        
     header={}
     models={}
     
@@ -290,13 +216,7 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
         
     
     
-    package_path=""
-    if(ros_package!=None):
-       out_dir=ros_package+"/"+out_dir
-       def_out=createDir(out_dir+"/def")
-       launch_out=createDir(out_dir+"/launch")
-        
-    model_out=createDir(out_dir+"/models")
+
             
     for number, attributes in models.items():
         
@@ -317,11 +237,19 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
                         
                 if "height" in attributes.keys():
                     dimensions[2]=float(attributes["height"])
-                    
-                convert_obj(model_path, model_out, dimensions)
+                
+                #get model_data    
+                model_data=analyze_obj(model_path, model_out, dimensions)
+                
+                #get material path 
+                material_path, extension = os.path.splitext(model_path)
+                material_path+=".mtl"
+                
+                print(material_path)
                 
                 
-                exit(1)
+                
+                break ###TODO <---REMOVE THIS LINE---
                 
             else:
                 status+=("Model does not exist: " +model_path+"\n")
@@ -370,17 +298,15 @@ def main():
         
     args = parser.parse_args(argv)
 
-    file_name, file_extension = os.path.splitext(args.infile)
-    
 
-    
+    file_name, file_extension = os.path.splitext(args.infile)
     
     
     if(file_extension==".sh3f"):
         convert_sh3d(args.infile, args.outdir, args.ros_package)
         pass
     elif(file_extension==".obj"):
-        convert_obj(args.infile, args.outdir)
+        analyze_obj(args.infile, args.outdir)
         pass
     else:
        raise TypeError("Unsupported file type! "+ file_extension)

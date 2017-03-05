@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<root  xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+       xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+       xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
+       xmlns:xacro="http://ros.org/wiki/xacro" >
+		
+       <!-- if object is static not movable by actors -->
+	   <xacro:arg name="static" default="true"/> 
+	  	
+       <!-- Package of this model -->
+	   <xacro:property name="package"  default="###PACKAGE###" />
+	   <xacro:property name="meshdir"  default="###MESH_DIR###" />
+	   		   
+       
+	   <xacro:if value="$(arg static)">
+			<gazebo>
+			    <static>true</static>
+			</gazebo>
+	   </xacro:if>	
+	   
+</root>
