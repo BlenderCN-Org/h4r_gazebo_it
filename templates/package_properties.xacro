@@ -9,8 +9,7 @@
 	   <xacro:arg name="static" default="true"/> 
 	  	
        <!-- Package of this model -->
-	   <xacro:property name="package"  default="###PACKAGE###" />
-	   <xacro:property name="meshdir"  default="###MESH_DIR###" />
+	   <xacro:property name="ros_package"  default="###PACKAGE###" />
 	   		   
        
 	   <xacro:if value="$(arg static)">

@@ -1,7 +1,6 @@
 import bpy,bmesh
 import os
 import zipfile
-import tempfile
 import os, shutil
 import re
 import io
@@ -159,39 +158,42 @@ def analyze_obj(obj_path, out_path, dimensions=None):
 
 
 def convert_sh3d(obj_path, out_dir, ros_package=None):
-    tempfolder=tempfile.mkdtemp()
-    #print(tempfolder)
-    #print(ros_package)
+    status=""
     
-    
-    
-    zip_ref = zipfile.ZipFile(obj_path, 'r')
-    zip_ref.extractall(tempfolder)
-    zip_ref.close()
-
-    package_path=""
-    if(ros_package!=None):
-       out_dir=out_dir+"/"+ros_package
-
-    #Create directories    
+    mesh_dir_basename="/sh3d_catalog"
+     
+     #Create directories    
     def_out=createDir(out_dir+"/def")
     def_basic_out=createDir(out_dir+"/def/basic")
     launch_out=createDir(out_dir+"/launch")
-    mesh_out=createDir(out_dir+"/mesh")
+    mesh_out=createDir(out_dir+mesh_dir_basename)
     model_out=createDir(out_dir+"/models")
     
     template_path=os.path.dirname(__file__)+"/../templates"
     
     
     shutil.copy(template_path+"/package_properties.xacro", def_basic_out)
-        
+    
+
+    
+    
+    zip_ref = zipfile.ZipFile(obj_path, 'r')
+    zip_ref.extractall(mesh_out)
+    zip_ref.close()
+
+    package_path=""
+    if(ros_package!=None):
+       out_dir=out_dir+"/"+ros_package
+       
+
+       
     header={}
     models={}
     
     
 
     #Lets read the FurnitureCatalog
-    with open(tempfolder+"/"+"PluginFurnitureCatalog.properties",encoding='ISO-8859-1') as f:
+    with open(mesh_out+"/"+"PluginFurnitureCatalog.properties",encoding='ISO-8859-1') as f:
         content = f.readlines()
     content = [x.strip() for x in content] 
         
@@ -222,7 +224,7 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
         
         if "model" in attributes.keys():
             
-            model_path=tempfolder+attributes["model"]
+            model_path=mesh_out+attributes["model"]
             
             if os.path.exists(model_path):
                 
@@ -242,12 +244,50 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
                 model_data=analyze_obj(model_path, model_out, dimensions)
                 
                 #get material path 
-                material_path, extension = os.path.splitext(model_path)
-                material_path+=".mtl"
+                model_file_name, extension = os.path.splitext(os.path.basename(model_path))
+
+                #Write definition file
+                def_file_template=template_path+"/template_simple.xacro"
+                def_file_out = def_out+"/"+model_file_name+".xacro"
+    
+                #read template for main definition file 
+                def_text=""
+                with open(def_file_template) as f:
+                    def_text=f.read()
+                    f.close()
                 
-                print(material_path)
+                #exchange template text
+                def_text=def_text.replace('###SCALE_X###', str(model_data['scales'][0]))
+                def_text=def_text.replace('###SCALE_Y###', str(model_data['scales'][1]))
+                def_text=def_text.replace('###SCALE_Z###', str(model_data['scales'][2]))
+                def_text=def_text.replace('###ELEVATION###', str(model_data['elevate']))
                 
                 
+                def_text=def_text.replace('###MASS###', str(1.0))
+                def_text=def_text.replace('###INERTIA_XX###', str(0.17))
+                def_text=def_text.replace('###INERTIA_XY###', str(0))
+                def_text=def_text.replace('###INERTIA_XZ###', str(0))
+                def_text=def_text.replace('###INERTIA_YY###', str(0.17))
+                def_text=def_text.replace('###INERTIA_YZ###', str(0))
+                def_text=def_text.replace('###INERTIA_ZZ###', str(0.17))                                
+
+                def_text=def_text.replace('###MESH_FILE###', "package://${ros_package}/"+mesh_dir_basename+attributes["model"])
+                
+                def_text=def_text.replace('###MODEL_NAME###', model_file_name )
+                
+                '''
+                TODO remove meshfile add collisions
+                '''
+                def_text=def_text.replace('###SIMPLE_COLLISIONS###','<geometry><mesh filename="${meshfile}"/> </geometry>' )
+                            
+                
+                #write out template
+                with open(def_file_out, "w") as f:
+                  f.write(def_text)
+
+
+
+
                 
                 break ###TODO <---REMOVE THIS LINE---
                 
@@ -258,9 +298,24 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
     print("Conversion Status:")
     print("-------")
     print(status)
+    
+    #read template for basic definition file 
+    def_basic_text=""
+    def_basic_file_template=template_path+"/package_properties.xacro"
+    def_basic_file_out = def_basic_out+"/package_properties.xacro"
+    with open(def_basic_file_template) as f:
+        def_basic_text=f.read()
+        f.close()
+    
+    #exchange template text
+    def_basic_text=def_basic_text.replace('###PACKAGE###', ros_package)
+    
+
+    #write out template
+    with open(def_basic_file_out, "w") as f:
+      f.write(def_basic_text)
         
 
-    shutil.rmtree(tempfolder)
 
 def main():
     import os
