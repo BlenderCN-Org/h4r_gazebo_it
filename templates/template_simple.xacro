@@ -52,7 +52,7 @@
 		<link name="${model_name}_base_link"/>  
 		
 		<joint name="joint_fixed_${model_name}_base_link_${model_name}" type="fixed">
-			<origin xyz="0 0 ${-elevate}" />	
+			<origin xyz="0 0 ${-elevate*$(arg scale_z)}" />	
 			<parent link="${model_name}_base_link" />
 			<child  link="${model_name}" />
 		</joint>  	

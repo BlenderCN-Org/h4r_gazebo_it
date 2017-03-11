@@ -289,11 +289,12 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
                 
                 dimensions=[None,None,None]
                 
-                if "length" in attributes.keys():
-                    dimensions[0]=float(attributes["length"])/100
                 
                 if "width" in attributes.keys():
-                    dimensions[1]=float(attributes["width"])/100
+                    dimensions[0]=float(attributes["width"])/100
+                
+                if "depth" in attributes.keys():
+                    dimensions[1]=float(attributes["depth"])/100
                         
                 if "height" in attributes.keys():
                     dimensions[2]=float(attributes["height"])/100
