@@ -1,0 +1,15 @@
+<launch>
+   <include file="$(find h4r_rapid_robot_xacros)/launch/empty_world.launch"/>
+
+
+     <include file="$(find h4r_rapid_robot_xacros)/launch/spawn.launch" >  
+          <arg name="model_file" value="$(find h4r_sh3d_contributions)/def/garageDoor2.xacro" />
+          <arg name="model_name" value="table_white_0" />
+          <arg name="posX" value="7.66" />
+          <arg name="posY" value="1.50" />
+          <arg name="yaw" value="-1.57" />
+          <arg name="model_params" value="" />
+        </include> 
+        
+        
+</launch>
