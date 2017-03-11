@@ -161,7 +161,7 @@ def analyze_obj(obj_path, out_path, dimensions=None):
     
     
     #Export to collada file
-    bpy.ops.wm.collada_export(out_file,
+    bpy.ops.wm.collada_export(filepath=out_file,
                               check_existing=True, 
                               filter_blender=False, 
                               filter_backup=False, 
@@ -197,7 +197,7 @@ def analyze_obj(obj_path, out_path, dimensions=None):
                               sort_by_name=False, 
                               export_transformation_type=0, 
                               export_transformation_type_selection='matrix', 
-                              open_sim=False)  
+                              open_sim=False)    
     return ret_data;
 
 
