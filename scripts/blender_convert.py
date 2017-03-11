@@ -315,7 +315,7 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
                 def_text=def_text.replace('###INERTIA_YZ###', str(0))
                 def_text=def_text.replace('###INERTIA_ZZ###', str(0.17))                                
 
-                def_text=def_text.replace('###MESH_FILE###', "package://"+ros_package+"/"+mesh_dir_basename+attributes["model"])
+                def_text=def_text.replace('###MESH_FILE###', "package://"+ros_package+"/"+os.path.basename(model_out)+model_data['model_file'])
                 
                 def_text=def_text.replace('###MODEL_NAME###', model_file_name )
 
