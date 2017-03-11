@@ -87,16 +87,30 @@ def getScales(target_sizes):
     scales=[1.0,1.0,1.0]
     sizes=[0,0,0]
     
+    print("Target Sizes of Model are:")
+    print(target_sizes)
     
     
     for s in range(3):
         sizes[s]=minmax[1][s]-minmax[0][s]
             
+    
+    
+    
+    print("Found the following sizes")
+    print(sizes)
+    
+    
+    
+    
     for s in range(3):
         if(target_sizes[s]!=None):
             if(abs(sizes[s] - target_sizes[s]) >0.001):
                 scales[s]=target_sizes[s]/sizes[s]
                 
+                
+    print("resulting in following scales")
+    print(scales)
     return scales
 
 def analyze_obj(obj_path, out_path, dimensions=None):
@@ -276,13 +290,13 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
                 dimensions=[None,None,None]
                 
                 if "length" in attributes.keys():
-                    dimensions[0]=float(attributes["length"])
+                    dimensions[0]=float(attributes["length"])/100
                 
                 if "width" in attributes.keys():
-                    dimensions[1]=float(attributes["width"])
+                    dimensions[1]=float(attributes["width"])/100
                         
                 if "height" in attributes.keys():
-                    dimensions[2]=float(attributes["height"])
+                    dimensions[2]=float(attributes["height"])/100
                 
                 #get model_data    
                 model_data=analyze_obj(model_path, model_out, dimensions)
