@@ -271,10 +271,10 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
                 def_text=def_text.replace('###INERTIA_YZ###', str(0))
                 def_text=def_text.replace('###INERTIA_ZZ###', str(0.17))                                
 
-                def_text=def_text.replace('###MESH_FILE###', "package://${ros_package}/"+mesh_dir_basename+attributes["model"])
+                def_text=def_text.replace('###MESH_FILE###', "package://"+ros_package+"/"+mesh_dir_basename+attributes["model"])
                 
                 def_text=def_text.replace('###MODEL_NAME###', model_file_name )
-                
+
                 '''
                 TODO remove meshfile add collisions
                 '''
@@ -298,23 +298,7 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
     print("Conversion Status:")
     print("-------")
     print(status)
-    
-    #read template for basic definition file 
-    def_basic_text=""
-    def_basic_file_template=template_path+"/package_properties.xacro"
-    def_basic_file_out = def_basic_out+"/package_properties.xacro"
-    with open(def_basic_file_template) as f:
-        def_basic_text=f.read()
-        f.close()
-    
-    #exchange template text
-    def_basic_text=def_basic_text.replace('###PACKAGE###', ros_package)
-    
 
-    #write out template
-    with open(def_basic_file_out, "w") as f:
-      f.write(def_basic_text)
-        
 
 
 def main():
