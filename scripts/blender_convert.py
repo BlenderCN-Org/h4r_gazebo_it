@@ -5,6 +5,13 @@ import os, shutil
 import re
 import io
 from copy import copy
+from math import sqrt
+from math import atan2
+from math import pi
+from mathutils import Matrix
+
+import math
+import mathutils
 
 def getBoundingBoxesForObjects():
 #     selected = bpy.context.selected_objects
@@ -36,6 +43,22 @@ def getBoundingBoxesForObjects():
 #         bound_box.location = obj.location
 #         bound_box.rotation_euler = obj.rotation_euler
          
+    pass
+
+
+def rotateObjAroundCenter(obj,rot): 
+    
+    for i, angle in enumerate("XYZ"):
+    
+        rot_mat = Matrix.Rotation(rot[i], 4, angle)
+        
+        orig_loc, orig_rot, orig_scale = obj.matrix_world.decompose()
+        orig_loc_mat = Matrix.Translation(orig_loc)
+        orig_rot_mat = orig_rot.to_matrix().to_4x4()
+        orig_scale_mat = Matrix.Scale(orig_scale[0],4,(1,0,0)) * Matrix.Scale(orig_scale[1],4,(0,1,0)) * Matrix.Scale(orig_scale[2],4,(0,0,1))
+        
+        obj.matrix_world = orig_loc_mat * rot_mat * orig_rot_mat * orig_scale_mat 
+    
     pass
 
 def createDir(dir):
@@ -113,7 +136,7 @@ def getScales(target_sizes):
     print(scales)
     return scales
 
-def analyze_obj(obj_path, out_path, dimensions=None):
+def analyze_obj(obj_path, out_path, dimensions=None, rot=None):
     file_name, file_extension = os.path.splitext(os.path.basename(obj_path))
     scene = bpy.context.scene
     
@@ -152,20 +175,29 @@ def analyze_obj(obj_path, out_path, dimensions=None):
     #Select all objects
     for obj in bpy.context.scene.objects:
         obj.select = True
+        
+        #rotate before checking sizes  
+        if(rot!=None):
+            print(rot)
+            rotateObjAroundCenter(obj, rot )
+    
+    
+    bpy.context.scene.update()
+
     
     #get height over ground    
     minmax=getCurrentSceneMinMaxCoords()
     ret_data['elevate']=minmax[0][2]
 
     
+    
     scales=[1.0, 1.0, 1.0]
     if(dimensions != None):
         scales=getScales(dimensions)
     ret_data['scales']=scales
     
-    
-    
-    
+  
+        
     createDir(out_path+"/"+file_name)
     ret_data['model_file']="/"+file_name+"/"+file_name+".dae"
     out_file=out_path+ret_data['model_file']
@@ -280,15 +312,23 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
             
     for number, attributes in models.items():
         
+        if(number != '427'):
+            continue
+    
+        
         if "model" in attributes.keys():
             
+            
+            euler_angles=[0,0,0]
             model_path=mesh_out+attributes["model"]
+            
+            
             
             if os.path.exists(model_path):
                 
                 
                 dimensions=[None,None,None]
-                
+                print(attributes.keys())
                 
                 if "width" in attributes.keys():
                     dimensions[0]=float(attributes["width"])/100
@@ -299,8 +339,37 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
                 if "height" in attributes.keys():
                     dimensions[2]=float(attributes["height"])/100
                 
+                if "modelrotation" in attributes.keys():
+                    r = [ float(rot) for rot in attributes["modelrotation"].split(" ")]
+                    
+                    
+                    if(len(r)==9):
+                        r11=r[0]
+                        r21=r[3]
+                        
+                    
+                        r31=r[6]
+                        r32=r[7]
+                        r33=r[8]
+                    
+                    
+                        
+                        
+                        euler_angles[0]=atan2(r32,r33)
+                        euler_angles[2]=atan2(-r31,sqrt(r32**2+r33**2))
+                        euler_angles[1]=atan2(r21,r11)
+                        
+
+                        #convert to degrees
+                        #for n, e in enumerate(euler_angles):
+                        #    euler_angles[n]=e*180/pi
+                        
+                        print("EULER ANGLES:")
+                        print(euler_angles)
+                
+                
                 #get model_data    
-                model_data=analyze_obj(model_path, model_out, dimensions)
+                model_data=analyze_obj(model_path, model_out, dimensions, euler_angles)
                 
                 #get material path 
                 model_file_name, extension = os.path.splitext(os.path.basename(model_path))
@@ -348,7 +417,6 @@ def convert_sh3d(obj_path, out_dir, ros_package=None):
 
 
                 
-                break ###TODO <---REMOVE THIS LINE---
                 
             else:
                 status+=("Model does not exist: " +model_path+"\n")
