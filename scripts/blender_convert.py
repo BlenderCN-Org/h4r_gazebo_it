@@ -187,18 +187,17 @@ def analyze_obj(obj_path, out_path, dimensions=None, rot=None):
     for obj in bpy.context.scene.objects:
         obj.location.x=obj.location.x+move[0]
         obj.location.y=obj.location.y+move[1]
-        obj.location.z=obj.location.z+move[2]
-    
-        #bpy.context.scene.cursor_location = pt
-        
+        obj.location.z=obj.location.z+move[2]        
         pass
-    bpy.context.scene.update()
+    
+    #todo maybe change to obj processing
+    bpy.context.scene.cursor_location.x=0
+    bpy.context.scene.cursor_location.y=0
+    bpy.context.scene.cursor_location.z=0
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')    
+    bpy.context.scene.update()
     
-    
-    
-    
-    #Select all objects
+    #Rotate all objects
     for obj in bpy.context.scene.objects:
         #rotate
         if(rot!=None):
@@ -217,7 +216,8 @@ def analyze_obj(obj_path, out_path, dimensions=None, rot=None):
     #get height over ground    
     minmax=getCurrentSceneMinMaxCoords()
     ret_data['elevate']=minmax[0][2]
-        
+    
+           
     createDir(out_path+"/"+file_name)
     ret_data['model_file']="/"+file_name+"/"+file_name+".dae"
     out_file=out_path+ret_data['model_file']
