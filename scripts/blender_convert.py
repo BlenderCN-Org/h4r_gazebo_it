@@ -172,11 +172,35 @@ def analyze_obj(obj_path, out_path, dimensions=None, rot=None):
                              global_clamp_size=0)
     
     
+    
+    #Get how to move all objects that they are completely centered
+    minmax=getCurrentSceneMinMaxCoords()
+    move=[0,0,0]    
+    for a in range(3):
+        move[a]=-(minmax[0][a]+(minmax[1][a]-minmax[0][a])/2)
+    print("Centering move distance")
+    print(move)
+    
+    
+    
+    #center scene
+    for obj in bpy.context.scene.objects:
+        obj.location.x=obj.location.x+move[0]
+        obj.location.y=obj.location.y+move[1]
+        obj.location.z=obj.location.z+move[2]
+    
+        #bpy.context.scene.cursor_location = pt
+        
+        pass
+    bpy.context.scene.update()
+    bpy.ops.object.origin_set(type='ORIGIN_CURSOR')    
+    
+    
+    
+    
     #Select all objects
     for obj in bpy.context.scene.objects:
-        obj.select = True
-        
-        #rotate before checking sizes  
+        #rotate
         if(rot!=None):
             print(rot)
             rotateObjAroundCenter(obj, rot )
@@ -185,18 +209,14 @@ def analyze_obj(obj_path, out_path, dimensions=None, rot=None):
     bpy.context.scene.update()
 
     
-    #get height over ground    
-    minmax=getCurrentSceneMinMaxCoords()
-    ret_data['elevate']=minmax[0][2]
-
-    
-    
     scales=[1.0, 1.0, 1.0]
     if(dimensions != None):
         scales=getScales(dimensions)
     ret_data['scales']=scales
     
-  
+    #get height over ground    
+    minmax=getCurrentSceneMinMaxCoords()
+    ret_data['elevate']=minmax[0][2]
         
     createDir(out_path+"/"+file_name)
     ret_data['model_file']="/"+file_name+"/"+file_name+".dae"
